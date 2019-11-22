@@ -4,6 +4,8 @@ var cheerio = require('cheerio');
 var config = require('../config');
 var url_lib = require('url');
 
+var mongoose = require('mongoose');
+var saved_url_schema = mongoose.model('saved_url')
 
 module.exports = {
 
@@ -44,9 +46,47 @@ module.exports = {
 				    };
 			  	});
 
-			  	callback({success:true,message:"Success",data:unique_records})
+			  	let total_links = Object.keys(unique_records)
+
+			  	for(let i=0;i<total_links.length;i++){
+			  		let key = total_links[i]
+			  		module.exports.save_urls_in_db(unique_records[key],key,function(resp){
+			  			if(i == total_links.length-1){
+			  				callback(resp)
+			  			}
+			  		})
+			  	}
+			  	//callback({success:true,message:"Success",data:unique_records})
 		    }
 		});
 
 	},
+
+	save_urls_in_db: function(data,key,callback){
+		saved_url_schema.update(
+			 { "url": key }, 
+			 { $set:{
+			 		"url": key,
+			 		"ref_count":data.ref_count,
+			 		"params":data.params
+			 	}
+			 },{upsert:true},
+			 function(err,cb) {
+			 	if (err) {
+					callback({success:false, msg:'Error'});
+			 	}else{
+					callback({success:true, msg:'success'});
+			 	}
+		});
+	},
+
+	fetch_urls_from_db: function(callback){
+		saved_url_schema.find({},{_id:0},function(error,response){
+			if(error){
+				callback({success:false, msg: 'can not fetch data',data:[]});
+			}else{
+				callback({success:true, data:response});
+			}
+		})
+	}
 };

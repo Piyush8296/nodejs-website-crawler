@@ -3,9 +3,14 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
+var mongoose = require('mongoose');
+mongoose.Promise = require('bluebird');
+require('./schema/model');
+
 var cors = require('cors');
 
 const rateLimit = require("express-rate-limit");
+var config = require('./config');
  
 const apiLimiter = rateLimit({
   windowMs: 1000,
@@ -14,6 +19,34 @@ const apiLimiter = rateLimit({
 
 var app = express();
 app.use(cors());
+
+mongoose.connect(config.DB_URL, {useMongoClient: true});
+
+mongoose.connection.on('connected', function(){
+  console.log('DB CONNECTION ESTABLISHED'.bold.green);
+});
+
+mongoose.connection.on('error',function (err) {  
+  console.log('ERROR CONNECTING DB ');
+  
+  setTimeout(function(){
+    mongoose.connect(config.DB_URL, {useMongoClient: true});
+  },5000);
+});
+
+mongoose.connection.on('disconnected', function () {  
+  console.log('DB DISCONNECTED'.bold.red); 
+  
+  setTimeout(function(){
+    mongoose.connect(config.DB_URL, {useMongoClient: true});
+  },5000);
+});
+
+process.on('SIGINT', function() {  
+  mongoose.connection.close(function () { 
+    process.exit(0); 
+  }); 
+}); 
 
 var io = require('./utilities/sockets').listen(app);
 
@@ -38,5 +71,3 @@ app.use('/api',api);
 app.use("/api/", apiLimiter);
 
 module.exports = app;
-
-console.log('Server is up and running')

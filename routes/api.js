@@ -15,6 +15,13 @@ module.exports = function(io){
 		})				
 	});
 
+	router.get('/fetch_saved_links',function(req,res){
+		
+		external_functions.fetch_urls_from_db((response)=>{
+			res.json(response)
+		})				
+	});
+
 	return router;
 
 };

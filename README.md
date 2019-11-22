@@ -1,4 +1,3 @@
-
 # Node Website Crawler
 
 This project aims at recursively crawling of a selected website by harvesting all possible hyperlinks and stores them in database.
